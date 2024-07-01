@@ -3,21 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4D Physics Game</title>
+    <title>4D Physics Game for ASI Training</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="menu">
-        <h1>4D Physics Game</h1>
-        <button id="singlePlayerButton">Single Player</button>
-        <button id="multiPlayerButton">Multiplayer</button>
-    </div>
     <div id="gameContainer">
         <div id="gameView"></div>
         <div id="feedback">
             <div id="scoreDisplay">Score: 0</div>
             <div id="levelDisplay">Level: 1</div>
             <div id="statusMessage"></div>
+        </div>
+        <div id="aiInfo">
+            <h3>AI Controller</h3>
+            <div id="strategyDisplay">Strategy: </div>
+            <div id="explorationRateDisplay">Exploration Rate: </div>
+            <div id="learningRateDisplay">Learning Rate: </div>
+        </div>
+        <div id="objectProperties">
+            <h3>Selected Object Properties</h3>
+            <div id="massDisplay">Mass: </div>
+            <div id="chargeDisplay">Charge: </div>
+            <div id="spinDisplay">Spin: </div>
+            <div id="entanglementDisplay">Entanglement: </div>
         </div>
         <div id="controllerContainer">
             <label for="speedSlider">Speed:</label>
@@ -26,10 +34,13 @@
             <input type="range" id="directionSlider" min="0" max="360" step="1" value="180">
             <button id="pauseButton">Pause</button>
             <button id="resetButton">Reset</button>
+            <button id="singlePlayerButton">Single Player</button>
+            <button id="multiPlayerButton">Multiplayer</button>
         </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
-    <script src="game.js"></script>
-    <script src="controllers.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <script type="module" src="physics.js"></script>
+    <script type="module" src="controllers.js"></script>
+    <script type="module" src="game.js"></script>
 </body>
 </html>
