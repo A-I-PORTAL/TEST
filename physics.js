@@ -24,6 +24,8 @@ function initPhysics(element) {
 
     // Add 4D gravity effect
     Matter.Events.on(engine, 'beforeUpdate', apply4DGravity);
+
+    return render;
 }
 
 function apply4DGravity() {
