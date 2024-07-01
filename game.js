@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupUserInterface();
   setupController();
   initializeGame();
-  startGame('single');
+  startGame('single'); // This will now start the game automatically
   
   Matter.Events.on(engine, 'afterUpdate', updateGame);
 });
@@ -224,8 +224,14 @@ function setLevel(newLevel) {
 function setupUserInterface() {
   document.getElementById('pauseButton').addEventListener('click', togglePause);
   document.getElementById('resetButton').addEventListener('click', resetGame);
-  document.getElementById('singlePlayerButton').addEventListener('click', () => startGame('single'));
-  document.getElementById('multiPlayerButton').addEventListener('click', () => startGame('multi'));
+  document.getElementById('singlePlayerButton').addEventListener('click', () => {
+    resetGame();
+    startGame('single');
+  });
+  document.getElementById('multiPlayerButton').addEventListener('click', () => {
+    resetGame();
+    startGame('multi');
+  });
   
   updateAIInfoDisplay();
 }
@@ -236,13 +242,16 @@ function togglePause() {
   if (isPaused) {
     Matter.Render.stop(render);
     Matter.Runner.stop(engine);
+    displayStatusMessage('Game paused');
   } else {
     Matter.Render.run(render);
     Matter.Runner.run(engine);
+    displayStatusMessage('Game resumed');
   }
 }
 
 function resetGame() {
+  Matter.World.clear(world, false);
   score = 0;
   level = 1;
   isPaused = false;
@@ -254,16 +263,18 @@ function resetGame() {
   metacognitiveController.performanceHistory = [];
   updateAIInfoDisplay();
   startGame(gameMode);
+  displayStatusMessage('Game reset');
 }
 
 function startGame(mode) {
   gameMode = mode;
   initializeGame();
   setPlayerControl(mode === 'single');
-  if (!isPaused) {
-    Matter.Engine.run(engine);
-    Matter.Render.run(render);
-  }
+  isPaused = false; // Ensure the game is not paused when starting
+  document.getElementById('pauseButton').innerHTML = 'Pause';
+  Matter.Engine.run(engine);
+  Matter.Render.run(render);
+  displayStatusMessage(`${mode.charAt(0).toUpperCase() + mode.slice(1)} player game started!`);
 }
 
 function updateAIInfoDisplay() {
@@ -295,7 +306,7 @@ function displayStatusMessage(message) {
   statusMessage.innerHTML = message;
   setTimeout(() => {
     statusMessage.innerHTML = '';
-  }, 2000);
+  }, 3000);
 }
 
 function interact4DObjects(obj1, obj2) {
