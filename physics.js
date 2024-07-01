@@ -1,61 +1,90 @@
-const { Engine, Render, Runner, World, Bodies, Body, Events } = Matter;
+import Matter from 'matter-js';
 
-const engine = Engine.create();
+const engine = Matter.Engine.create();
 const world = engine.world;
 
-const render = Render.create({
-  element: document.body,
-  engine: engine,
-  canvas: document.getElementById('gameCanvas'),
-  options: {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    wireframes: false
-  }
-});
+let render;
+let runner;
 
-Render.run(render);
-const runner = Runner.create();
-Runner.run(runner, engine);
+function initPhysics(element) {
+    render = Matter.Render.create({
+        element: element,
+        engine: engine,
+        options: {
+            width: element.clientWidth,
+            height: element.clientHeight,
+            wireframes: false,
+            background: '#f0f0f0'
+        }
+    });
 
-const boundaries = [
-  Bodies.rectangle(window.innerWidth / 2, 0, window.innerWidth, 50, { isStatic: true }),
-  Bodies.rectangle(window.innerWidth / 2, window.innerHeight, window.innerWidth, 50, { isStatic: true }),
-  Bodies.rectangle(0, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true }),
-  Bodies.rectangle(window.innerWidth, window.innerHeight / 2, 50, window.innerHeight, { isStatic: true })
-];
-World.add(world, boundaries);
+    Matter.Render.run(render);
+    runner = Matter.Runner.create();
+    Matter.Runner.run(runner, engine);
 
-const fourDObjects = [];
+    // Add 4D gravity effect
+    Matter.Events.on(engine, 'beforeUpdate', apply4DGravity);
+}
 
-Events.on(engine, 'beforeUpdate', () => {
-  fourDObjects.forEach(update4DObject);
-});
+function apply4DGravity() {
+    const objects = Matter.Composite.allBodies(world);
+    for (let i = 0; i < objects.length; i++) {
+        for (let j = i + 1; j < objects.length; j++) {
+            const bodyA = objects[i];
+            const bodyB = objects[j];
+            const force = calculate4DGravitationalForce(bodyA, bodyB);
+            Matter.Body.applyForce(bodyA, bodyA.position, force);
+            Matter.Body.applyForce(bodyB, bodyB.position, Matter.Vector.neg(force));
+        }
+    }
+}
+
+function calculate4DGravitationalForce(bodyA, bodyB) {
+    const G = 6.674e-11; // gravitational constant
+    const distanceVector = Matter.Vector.sub(bodyB.position, bodyA.position);
+    const distance = Matter.Vector.magnitude(distanceVector) + 1e-10; // avoid division by zero
+    const forceMagnitude = (G * bodyA.mass * bodyB.mass) / (distance * distance);
+    return Matter.Vector.mult(Matter.Vector.normalise(distanceVector), forceMagnitude);
+}
+
+function applyQuantumEffects(objects) {
+    objects.forEach(obj => {
+        // Quantum tunneling
+        if (Math.random() < 0.01) {
+            const tunnelDistance = (Math.random() - 0.5) * 50;
+            Matter.Body.setPosition(obj, {
+                x: obj.position.x + tunnelDistance,
+                y: obj.position.y + tunnelDistance
+            });
+        }
+
+        // Spin-orbit interaction
+        const spinForce = Matter.Vector.rotate(Matter.Vector.create(0.1, 0), obj.properties.spin);
+        Matter.Body.applyForce(obj, obj.position, spinForce);
+
+        // Charge interaction
+        objects.forEach(other => {
+            if (other !== obj) {
+                const chargeForce = calculateChargeForce(obj, other);
+                Matter.Body.applyForce(obj, obj.position, chargeForce);
+            }
+        });
+    });
+}
+
+function calculateChargeForce(objA, objB) {
+    const k = 8.99e9; // Coulomb's constant
+    const distanceVector = Matter.Vector.sub(objB.position, objA.position);
+    const distance = Matter.Vector.magnitude(distanceVector) + 1e-10; // avoid division by zero
+    const forceMagnitude = (k * objA.properties.charge * objB.properties.charge) / (distance * distance);
+    return Matter.Vector.mult(Matter.Vector.normalise(distanceVector), forceMagnitude);
+}
 
 function update4DObject(object) {
-  object.fourthDimension += 0.01;
-  object.position.x = 200 + 100 * Math.sin(object.fourthDimension);
-  object.position.y = 200 + 100 * Math.cos(object.fourthDimension);
-
-  if (object.fourthDimension % (2 * Math.PI) < Math.PI) {
-    Body.scale(object, 1.01, 1.01);
-  } else {
-    Body.scale(object, 0.99, 0.99);
-  }
-
-  fourDObjects.forEach(otherObject => {
-    if (object !== otherObject && areObjectsClose(object, otherObject)) {
-      interact4DObjects(object, otherObject);
-    }
-  });
-}
-
-function areObjectsClose(obj1, obj2) {
-  const distance = Math.sqrt(Math.pow(obj1.position.x - obj2.position.x, 2) + Math.pow(obj1.position.y - obj2.position.y, 2));
-  return distance < 50;
-}
-
-function interact4DObjects(obj1, obj2) {
-  Body.scale(obj1, 1.05, 1.05);
-  Body.scale(obj2, 1.05, 1.05);
-}
+    object.fourthDimension += 0.01;
+    
+    // 4D rotation
+    const w = Math.sin(object.fourthDimension) * 0.5;
+    const x = object.position.x + Math.cos(object.fourthDimension) * w;
+    const y = object.position.y + Math.sin(object.fourthDimension) * w;
+    const z = Math.cos(object.
