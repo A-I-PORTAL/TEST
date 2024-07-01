@@ -87,4 +87,43 @@ function update4DObject(object) {
     const w = Math.sin(object.fourthDimension) * 0.5;
     const x = object.position.x + Math.cos(object.fourthDimension) * w;
     const y = object.position.y + Math.sin(object.fourthDimension) * w;
-    const z = Math.cos(object.
+    const z = Math.cos(object.fourthDimension) * 0.5;
+
+    Matter.Body.setPosition(object, { x, y });
+    
+    // 4D scaling
+    const scale = 1 + 0.1 * Math.sin(object.fourthDimension);
+    Matter.Body.scale(object, scale, scale);
+
+    // Apply forces based on object properties
+    const forceX = object.properties.charge * Math.cos(object.properties.spin) * 0.1;
+    const forceY = object.properties.charge * Math.sin(object.properties.spin) * 0.1;
+    Matter.Body.applyForce(object, object.position, { x: forceX, y: forceY });
+}
+
+function createBody(x, y, radius, options = {}) {
+    const body = Matter.Bodies.circle(x, y, radius, options);
+    body.properties = {
+        mass: options.mass || Math.random() * 10 + 1,
+        charge: options.charge || (Math.random() * 2 - 1),
+        spin: options.spin || Math.random() * 2 * Math.PI,
+        entanglement: null
+    };
+    body.fourthDimension = Math.random() * 2 * Math.PI;
+    return body;
+}
+
+function entangleObjects(obj1, obj2) {
+    obj1.properties.entanglement = obj2;
+    obj2.properties.entanglement = obj1;
+}
+
+export { 
+    initPhysics, 
+    applyQuantumEffects, 
+    update4DObject, 
+    createBody, 
+    entangleObjects,
+    world,
+    engine
+};
