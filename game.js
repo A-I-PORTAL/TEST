@@ -1,4 +1,5 @@
 import { initPhysics, applyQuantumEffects, update4DObject, createBody, entangleObjects, world, engine } from './physics.js';
+import { setupController, setPlayerControl } from './controllers.js';
 
 let score = 0;
 let level = 1;
@@ -6,6 +7,7 @@ let isPaused = false;
 let gameMode = 'single';
 let fourDObjects = [];
 let selectedObject = null;
+let render;
 
 let levels = [
   { numObjects: 5, objective: 'Merge all objects', timeLimit: 60 },
@@ -45,9 +47,10 @@ let metacognitiveController = {
 
 document.addEventListener('DOMContentLoaded', () => {
   const gameViewElement = document.getElementById('gameView');
-  initPhysics(gameViewElement);
+  render = initPhysics(gameViewElement);
   
   setupUserInterface();
+  setupController();
   initializeGame();
   startGame('single');
   
@@ -69,14 +72,17 @@ function createGameObjects(numObjects) {
     const y = Math.random() * gameViewElement.clientHeight;
     const radius = 20;
     const body = createBody(x, y, radius, {
-      render: { fillStyle: getRandomColor() }
+      render: { 
+        fillStyle: getRandomColor(),
+        strokeStyle: '#000000',
+        lineWidth: 1
+      }
     });
     
     fourDObjects.push(body);
     Matter.World.add(world, body);
   }
 
-  // Create some entangled pairs
   for (let i = 0; i < Math.floor(numObjects / 2); i++) {
     entangleObjects(fourDObjects[i * 2], fourDObjects[i * 2 + 1]);
   }
@@ -119,8 +125,6 @@ function exploreRandomAction() {
 
 function exploitBestAction() {
   // Implement your best action selection logic here
-  // This could involve evaluating the current state and choosing the action
-  // that has historically led to the best outcomes
   return exploreRandomAction(); // Placeholder for now
 }
 
@@ -191,8 +195,6 @@ function splitObject(obj) {
 
 function evaluatePerformance(action) {
   // Implement performance evaluation logic here
-  // This could involve calculating a score based on the current game state,
-  // the action taken, and the resulting outcome
   return Math.random(); // Placeholder for now
 }
 
@@ -231,6 +233,13 @@ function setupUserInterface() {
 function togglePause() {
   isPaused = !isPaused;
   document.getElementById('pauseButton').innerHTML = isPaused ? 'Resume' : 'Pause';
+  if (isPaused) {
+    Matter.Render.stop(render);
+    Matter.Runner.stop(engine);
+  } else {
+    Matter.Render.run(render);
+    Matter.Runner.run(engine);
+  }
 }
 
 function resetGame() {
@@ -244,11 +253,17 @@ function resetGame() {
   metacognitiveController.strategy = 'random';
   metacognitiveController.performanceHistory = [];
   updateAIInfoDisplay();
+  startGame(gameMode);
 }
 
 function startGame(mode) {
   gameMode = mode;
   initializeGame();
+  setPlayerControl(mode === 'single');
+  if (!isPaused) {
+    Matter.Engine.run(engine);
+    Matter.Render.run(render);
+  }
 }
 
 function updateAIInfoDisplay() {
@@ -285,11 +300,9 @@ function displayStatusMessage(message) {
 
 function interact4DObjects(obj1, obj2) {
   // Implement 4D object interaction logic here
-  // This could involve merging, splitting, or other complex interactions
   console.log('4D objects interacting:', obj1, obj2);
 }
 
-// Event listener for object selection
 document.getElementById('gameView').addEventListener('click', (event) => {
   const mousePosition = Matter.Vector.create(event.clientX, event.clientY);
   selectedObject = Matter.Query.point(fourDObjects, mousePosition)[0];
