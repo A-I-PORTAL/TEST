@@ -1,4 +1,5 @@
-import { initPhysics, applyQuantumEffects, update4DObject, createBody, entangleObjects, world, engine } from './physics.js';
+import Matter from 'matter-js';
+import { applyQuantumEffects, update4DObject, entangleObjects } from './physics.js';
 import { setupController, setPlayerControl } from './controllers.js';
 
 let score = 0;
@@ -8,6 +9,8 @@ let gameMode = 'single';
 let fourDObjects = [];
 let selectedObject = null;
 let render;
+let engine;
+let world;
 
 let levels = [
   { numObjects: 5, objective: 'Merge all objects', timeLimit: 60 },
@@ -46,23 +49,47 @@ let metacognitiveController = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM content loaded, initializing game...');
   const gameViewElement = document.getElementById('gameView');
-  render = initPhysics(gameViewElement);
-  
+  if (!gameViewElement) {
+    console.error('Game view element not found!');
+    return;
+  }
+
+  // Initialize physics engine and renderer
+  engine = Matter.Engine.create();
+  world = engine.world;
+
+  render = Matter.Render.create({
+    element: gameViewElement,
+    engine: engine,
+    options: {
+      width: gameViewElement.clientWidth,
+      height: gameViewElement.clientHeight,
+      wireframes: false,
+      background: '#f0f0f0'
+    }
+  });
+
+  Matter.Render.run(render);
+  Matter.Runner.run(Matter.Runner.create(), engine);
+
   setupUserInterface();
   setupController();
   initializeGame();
-  startGame('single'); // This will now start the game automatically
-  
-  Matter.Events.on(engine, 'afterUpdate', updateGame);
+  startGame('single');
+
+  console.log('Game initialized and started');
 });
 
 function initializeGame() {
+  console.log('Initializing game...');
   createGameObjects(levels[level - 1].numObjects);
   setLevel(level);
 }
 
 function createGameObjects(numObjects) {
+  console.log(`Creating ${numObjects} game objects...`);
   Matter.World.clear(world, false);
   fourDObjects = [];
   const gameViewElement = document.getElementById('gameView');
@@ -71,7 +98,7 @@ function createGameObjects(numObjects) {
     const x = Math.random() * gameViewElement.clientWidth;
     const y = Math.random() * gameViewElement.clientHeight;
     const radius = 20;
-    const body = createBody(x, y, radius, {
+    const body = Matter.Bodies.circle(x, y, radius, {
       render: { 
         fillStyle: getRandomColor(),
         strokeStyle: '#000000',
@@ -86,6 +113,8 @@ function createGameObjects(numObjects) {
   for (let i = 0; i < Math.floor(numObjects / 2); i++) {
     entangleObjects(fourDObjects[i * 2], fourDObjects[i * 2 + 1]);
   }
+
+  console.log(`Created ${fourDObjects.length} objects`);
 }
 
 function updateGame() {
@@ -176,10 +205,10 @@ function splitObject(obj) {
   if (obj.circleRadius > 10) {
     const newRadius = obj.circleRadius / Math.sqrt(2);
     const offset = 5;
-    const newObj1 = createBody(obj.position.x - offset, obj.position.y - offset, newRadius, {
+    const newObj1 = Matter.Bodies.circle(obj.position.x - offset, obj.position.y - offset, newRadius, {
       render: { fillStyle: obj.render.fillStyle }
     });
-    const newObj2 = createBody(obj.position.x + offset, obj.position.y + offset, newRadius, {
+    const newObj2 = Matter.Bodies.circle(obj.position.x + offset, obj.position.y + offset, newRadius, {
       render: { fillStyle: obj.render.fillStyle }
     });
 
@@ -251,6 +280,7 @@ function togglePause() {
 }
 
 function resetGame() {
+  console.log('Resetting game...');
   Matter.World.clear(world, false);
   score = 0;
   level = 1;
@@ -267,14 +297,24 @@ function resetGame() {
 }
 
 function startGame(mode) {
+  console.log(`Starting game in ${mode} mode...`);
   gameMode = mode;
   initializeGame();
   setPlayerControl(mode === 'single');
-  isPaused = false; // Ensure the game is not paused when starting
+  isPaused = false;
   document.getElementById('pauseButton').innerHTML = 'Pause';
   Matter.Engine.run(engine);
   Matter.Render.run(render);
   displayStatusMessage(`${mode.charAt(0).toUpperCase() + mode.slice(1)} player game started!`);
+
+  // Ensure the game loop is running
+  function gameLoop() {
+    if (!isPaused) {
+      updateGame();
+    }
+    requestAnimationFrame(gameLoop);
+  }
+  gameLoop();
 }
 
 function updateAIInfoDisplay() {
@@ -285,10 +325,10 @@ function updateAIInfoDisplay() {
 
 function updateObjectPropertiesDisplay() {
   if (selectedObject) {
-    document.getElementById('massDisplay').innerHTML = `Mass: ${selectedObject.properties.mass.toFixed(2)}`;
-    document.getElementById('chargeDisplay').innerHTML = `Charge: ${selectedObject.properties.charge.toFixed(2)}`;
-    document.getElementById('spinDisplay').innerHTML = `Spin: ${selectedObject.properties.spin.toFixed(2)}`;
-    document.getElementById('entanglementDisplay').innerHTML = `Entanglement: ${selectedObject.properties.entanglement ? 'Yes' : 'No'}`;
+    document.getElementById('massDisplay').innerHTML = `Mass: ${selectedObject.mass.toFixed(2)}`;
+    document.getElementById('chargeDisplay').innerHTML = `Charge: ${selectedObject.charge ? selectedObject.charge.toFixed(2) : 'N/A'}`;
+    document.getElementById('spinDisplay').innerHTML = `Spin: ${selectedObject.spin ? selectedObject.spin.toFixed(2) : 'N/A'}`;
+    document.getElementById('entanglementDisplay').innerHTML = `Entanglement: ${selectedObject.entanglement ? 'Yes' : 'No'}`;
   }
 }
 
@@ -302,11 +342,16 @@ function getRandomColor() {
 }
 
 function displayStatusMessage(message) {
+  console.log('Status:', message);
   const statusMessage = document.getElementById('statusMessage');
-  statusMessage.innerHTML = message;
-  setTimeout(() => {
-    statusMessage.innerHTML = '';
-  }, 3000);
+  if (statusMessage) {
+    statusMessage.innerHTML = message;
+    setTimeout(() => {
+      statusMessage.innerHTML = '';
+    }, 3000);
+  } else {
+    console.error('Status message element not found');
+  }
 }
 
 function interact4DObjects(obj1, obj2) {
@@ -321,6 +366,7 @@ document.getElementById('gameView').addEventListener('click', (event) => {
 });
 
 export function internalTrigger(action, mode) {
+  console.log(`Internal trigger: ${action}, mode: ${mode}`);
   switch(action) {
     case 'start':
       startGame(mode);
