@@ -1,3 +1,4 @@
+import * as Matter from 'matter-js';
 import { world, engine } from './physics.js';
 
 let playerControl = true;
